@@ -1,17 +1,20 @@
 import streamlit as st
-import joblib
-import pandas as pd
+import requests
 
-# Load model
-model = joblib.load("flight_fare_model.pkl")
-
-st.set_page_config(page_title="Flight Fare Predictor", layout="wide")
+# Page configuration
+st.set_page_config(
+    page_title="Flight Fare Predictor",
+    page_icon="✈️",
+    layout="wide"
+)
 
 st.title("✈️ Flight Fare Prediction System")
-st.markdown("Plan your trip and get instant fare predictions using AI")
+st.markdown("### Plan your trip and get an AI-powered fare prediction")
 st.divider()
 
+
 # ---------------- MAPPINGS ----------------
+
 airline_map = {
     "IndiGo": 3,
     "Air India": 1,
@@ -33,83 +36,148 @@ destination_map = {
     "Chennai": 1
 }
 
+
 # ---------------- INPUT SECTION ----------------
+
 st.subheader("📍 Enter Travel Details")
 
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    airline = st.selectbox("✈️ Airline", list(airline_map.keys()))
-    source = st.selectbox("📍 Source", list(source_map.keys()))
-    total_stops = st.number_input("🔁 Total Stops", 0, 5)
+
+    airline = st.selectbox(
+        "✈️ Airline",
+        list(airline_map.keys())
+    )
+
+    source = st.selectbox(
+        "📍 Source",
+        list(source_map.keys())
+    )
+
+    total_stops = st.number_input(
+        "🔁 Total Stops",
+        min_value=0,
+        max_value=5,
+        value=0
+    )
+
 
 with col2:
-    destination = st.selectbox("🏁 Destination", list(destination_map.keys()))
-    journey_day = st.number_input("📅 Journey Day", 1, 31)
-    journey_month = st.number_input("📆 Journey Month", 1, 12)
+
+    destination = st.selectbox(
+        "🏁 Destination",
+        list(destination_map.keys())
+    )
+
+    journey_day = st.number_input(
+        "📅 Journey Day",
+        min_value=1,
+        max_value=31,
+        value=15
+    )
+
+    journey_month = st.number_input(
+        "📆 Journey Month",
+        min_value=1,
+        max_value=12,
+        value=6
+    )
+
 
 with col3:
-    dep_hour = st.number_input("🛫 Departure Hour", 0, 23)
-    dep_min = st.number_input("🛫 Departure Minute", 0, 59)
-    arrival_hour = st.number_input("🛬 Arrival Hour", 0, 23)
-    arrival_min = st.number_input("🛬 Arrival Minute", 0, 59)
 
-# ---------------- PREDICT BUTTON ----------------
-if st.button("💰 Predict Fare"):
-
-    with st.spinner("🔍 Calculating best fare for your trip..."):
-
-        input_data = pd.DataFrame([[
-            airline_map[airline],
-            source_map[source],
-            destination_map[destination],
-            total_stops,
-            journey_day,
-            journey_month,
-            dep_hour,
-            dep_min,
-            arrival_hour,
-            arrival_min
-        ]], columns=[
-            'Airline',
-            'Source',
-            'Destination',
-            'Total_Stops',
-            'Journey_Day',
-            'Journey_Month',
-            'Dep_Hour',
-            'Dep_Min',
-            'Arrival_Hour',
-            'Arrival_Min'
-        ])
-
-        prediction = model.predict(input_data)[0]
-
-    st.success("✅ Prediction Completed Successfully!")
-
-    st.markdown("---")
-
-    st.markdown(
-        f"""
-        <div style="
-            background-color:#0f172a;
-            padding:20px;
-            border-radius:15px;
-            text-align:center;
-            color:white;
-            box-shadow:0px 0px 10px rgba(0,0,0,0.3);
-        ">
-            <h2 style="color:#00ffcc;">💰 Estimated Flight Fare</h2>
-            <h1 style="color:#ffffff;">₹ {prediction:,.2f}</h1>
-        </div>
-        """,
-        unsafe_allow_html=True
+    dep_hour = st.number_input(
+        "🛫 Departure Hour",
+        min_value=0,
+        max_value=23,
+        value=10
     )
-    
+
+    dep_min = st.number_input(
+        "🛫 Departure Minute",
+        min_value=0,
+        max_value=59,
+        value=30
+    )
+
+    arrival_hour = st.number_input(
+        "🛬 Arrival Hour",
+        min_value=0,
+        max_value=23,
+        value=13
+    )
+
+    arrival_min = st.number_input(
+        "🛬 Arrival Minute",
+        min_value=0,
+        max_value=59,
+        value=45
+    )
 
 
-
-    
-
+st.divider()
 
 
+# ---------------- PREDICTION ----------------
+
+if st.button("💰 Predict Fare", use_container_width=True):
+
+    data = {
+        "Airline": airline_map[airline],
+        "Source": source_map[source],
+        "Destination": destination_map[destination],
+        "Total_Stops": total_stops,
+        "Journey_Day": journey_day,
+        "Journey_Month": journey_month,
+        "Dep_Hour": dep_hour,
+        "Dep_Min": dep_min,
+        "Arrival_Hour": arrival_hour,
+        "Arrival_Min": arrival_min
+    }
+
+    with st.spinner("🔍 Calculating fare..."):
+
+        try:
+
+            response = requests.post(
+                "http://127.0.0.1:8000/predict",
+                json=data,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+
+                result = response.json()
+
+                prediction = result["predicted_fare"]
+
+                st.success("✅ Prediction Completed Successfully!")
+
+                st.markdown("---")
+
+                st.subheader("💰 Estimated Flight Fare")
+
+                st.metric(
+                    label="Predicted Fare",
+                    value=f"₹ {prediction:,.2f}"
+                )
+
+            else:
+
+                st.error(
+                    f"❌ API Error: {response.status_code}"
+                )
+
+        except requests.exceptions.ConnectionError:
+
+            st.error(
+                "❌ Unable to connect to the FastAPI backend. "
+                "Make sure FastAPI is running on port 8000."
+            )
+
+        except requests.exceptions.RequestException as e:
+
+            st.error(
+                f"❌ Request failed: {e}"
+            )

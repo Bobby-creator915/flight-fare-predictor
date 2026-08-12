@@ -1,0 +1,7 @@
+services:
+  flight-fare-api:
+    build: .
+    container_name: flight-fare-api-container
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
