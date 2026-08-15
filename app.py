@@ -1,5 +1,11 @@
 import streamlit as st
 import requests
+import os
+
+API_URL = os.getenv(
+    "API_URL",
+    "http://127.0.0.1:8000"
+)
 
 # Page configuration
 st.set_page_config(
@@ -141,10 +147,10 @@ if st.button("💰 Predict Fare", use_container_width=True):
         try:
 
             response = requests.post(
-                "http://127.0.0.1:8000/predict",
-                json=data,
-                timeout=30
-            )
+    f"{API_URL}/predict",
+    json=data,
+    timeout=30
+)
 
             if response.status_code == 200:
 
