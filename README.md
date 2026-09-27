@@ -6,7 +6,9 @@ A Machine Learning web application that predicts flight ticket prices based on f
 
 Add your Streamlit link here:
 
-https://YOUR-APP.streamlit.app
+## 🚀 Live Demo
+
+[Open Flight Fare Predictor](https://flight-fare-predictor-thvjl2chm6wnswz6ryx3db.streamlit.app/)
 
 ---
 
